@@ -1,0 +1,10 @@
+{
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch server.js"
+  },
+  "devDependencies": {
+    "tsx": "^4.19.3"
+  }
+}
