@@ -3,5 +3,8 @@
   "type": "module",
   "scripts": {
     "dev": "node server.js"
+  },
+  "devDependencies": {
+    "escape-html": "^1.0.3"
   }
 }
