@@ -1,14 +1,57 @@
 import { createServer } from 'http'
-import { readFile } from 'fs/promises'
+import { readFile, readdir } from 'fs/promises'
 import escapeHtml from 'escape-html'
+import sanitizeFilename from 'sanitize-filename'
 
 createServer(async (req, res) => {
-  const author = 'Jiwon Choi'
-  const postContent = await readFile('./posts/hello-world.txt', 'utf8')
-  sendHTML(res, <BlogPostPage author={author} postContent={postContent} />)
+  try {
+    const url = new URL(req.url, `http://${req.headers.host}`)
+    // Match the URL to a page and load the data it needs.
+    const page = await matchRoute(url)
+    // Wrap the matched page into the shared layout.
+    sendHTML(res, <BlogLayout>{page}</BlogLayout>)
+  } catch (err) {
+    console.error(err)
+    res.statusCode = err.statusCode ?? 500
+    res.end()
+  }
 }).listen(3000)
 
-function BlogPostPage({ postContent, author }) {
+async function matchRoute(url) {
+  if (url.pathname === '/') {
+    // We're on the index route which shows every blog post one by one.
+    // Read all the files in the posts folder, and load their contents.
+    const postFiles = await readdir('./posts')
+    const postSlugs = postFiles.map((file) =>
+      file.slice(0, file.lastIndexOf('.'))
+    )
+    const postContents = await Promise.all(
+      postSlugs.map((postSlug) =>
+        readFile('./posts/' + postSlug + '.txt', 'utf8')
+      )
+    )
+    return <BlogIndexPage postSlugs={postSlugs} postContents={postContents} />
+  } else {
+    // We're showing an individual blog post.
+    // Read the corresponding file from the posts folder.
+    const postSlug = sanitizeFilename(url.pathname.slice(1))
+    try {
+      const postContent = await readFile('./posts/' + postSlug + '.txt', 'utf8')
+      return <BlogPostPage postSlug={postSlug} postContent={postContent} />
+    } catch (err) {
+      throwNotFound(err)
+    }
+  }
+}
+
+function throwNotFound(cause) {
+  const notFound = new Error('Not found.', { cause })
+  notFound.statusCode = 404
+  throw notFound
+}
+
+function BlogLayout({ children }) {
+  const author = 'Jae Doe'
   return (
     <html>
       <head>
@@ -19,10 +62,39 @@ function BlogPostPage({ postContent, author }) {
           <a href="/">Home</a>
           <hr />
         </nav>
-        <article>{postContent}</article>
+        <main>{children}</main>
         <Footer author={author} />
       </body>
     </html>
+  )
+}
+
+function BlogPostPage({ postSlug, postContent }) {
+  return (
+    <section>
+      <h2>
+        <a href={'/' + postSlug}>{postSlug}</a>
+      </h2>
+      <article>{postContent}</article>
+    </section>
+  )
+}
+
+function BlogIndexPage({ postSlugs, postContents }) {
+  return (
+    <section>
+      <h1>Welcome to my blog</h1>
+      <div>
+        {postSlugs.map((postSlug, index) => (
+          <section key={postSlug}>
+            <h2>
+              <a href={'/' + postSlug}>{postSlug}</a>
+            </h2>
+            <article>{postContents[index]}</article>
+          </section>
+        ))}
+      </div>
+    </section>
   )
 }
 
