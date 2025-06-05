@@ -2,9 +2,14 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "node server.js"
+    "dev": "nodemon -- --experimental-loader ./node-jsx-loader.js ./server.js"
   },
-  "devDependencies": {
-    "escape-html": "^1.0.3"
+  "packageManager": "pnpm@9.6.0",
+  "dependencies": {
+    "@babel/core": "^7.27.4",
+    "@babel/plugin-transform-react-jsx": "^7.27.1",
+    "escape-html": "^1.0.3",
+    "nodemon": "^3.1.10",
+    "react": "^19.1.0"
   }
 }
