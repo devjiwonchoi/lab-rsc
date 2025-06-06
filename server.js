@@ -108,6 +108,12 @@ function Footer({ author }) {
 
 async function sendHTML(res, jsx) {
   let html = await renderJSXToHTML(jsx)
+  const clientJSX = await renderJSXToClientJSX(jsx)
+  const clientJSXString = JSON.stringify(clientJSX, stringifyJSX)
+  console.log({ clientJSXString })
+  html += `<script>window.__INITIAL_CLIENT_JSX_STRING__ = `
+  html += JSON.stringify(clientJSXString).replace(/</g, '\\u003c')
+  html += `</script>`
   html += `
     <script type="importmap">
       {
@@ -123,9 +129,19 @@ async function sendHTML(res, jsx) {
   res.end(html)
 }
 
+function stringifyJSX(key, value) {
+  if (value === Symbol.for('react.transitional.element')) {
+    return '$RE'
+  } else if (typeof value === 'string' && value.startsWith('$')) {
+    return '$' + value
+  } else {
+    return value
+  }
+}
+
 async function sendJSX(res, jsx) {
   const clientJSX = await renderJSXToClientJSX(jsx)
-  const clientJSXString = JSON.stringify(clientJSX, null, 2) // Indent with two spaces
+  const clientJSXString = JSON.stringify(clientJSX, stringifyJSX)
   res.setHeader('Content-Type', 'application/json')
   res.end(clientJSXString)
 }
@@ -151,7 +167,18 @@ async function renderJSXToHTML(jsx) {
     const childHtmls = await Promise.all(
       jsx.map((child) => renderJSXToHTML(child))
     )
-    return childHtmls.join('')
+    let html = ''
+    let wasTextNode = false
+    let isTextNode = false
+    for (let i = 0; i < jsx.length; i++) {
+      isTextNode = typeof jsx[i] === 'string' || typeof jsx[i] === 'number'
+      if (wasTextNode && isTextNode) {
+        html += '<!-- -->'
+      }
+      html += childHtmls[i]
+      wasTextNode = isTextNode
+    }
+    return html
   } else if (typeof jsx === 'object') {
     if (jsx.$$typeof === Symbol.for('react.transitional.element')) {
       if (typeof jsx.type === 'string') {

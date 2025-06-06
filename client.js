@@ -12,13 +12,27 @@ async function navigate(pathname) {
 }
 
 function getInitialClientJSX() {
-  return null // TODO
+  const clientJSX = JSON.parse(window.__INITIAL_CLIENT_JSX_STRING__, parseJSX)
+  return clientJSX
+}
+
+function parseJSX(key, value) {
+  if (value === '$RE') {
+    // This is our special marker we added on the server.
+    // Restore the Symbol to tell React that this is valid JSX.
+    return Symbol.for('react.transitional.element')
+  } else if (typeof value === 'string' && value.startsWith('$$')) {
+    // This is a string starting with $. Remove the extra $ added by the server.
+    return value.slice(1)
+  } else {
+    return value
+  }
 }
 
 async function fetchClientJSX(pathname) {
   const response = await fetch(pathname + '?jsx')
   const clientJSXString = await response.text()
-  const clientJSX = JSON.parse(clientJSXString)
+  const clientJSX = JSON.parse(clientJSXString, parseJSX)
   return clientJSX
 }
 
