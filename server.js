@@ -6,9 +6,7 @@ import sanitizeFilename from 'sanitize-filename'
 createServer(async (req, res) => {
   try {
     const url = new URL(req.url, `http://${req.headers.host}`)
-    if (url.pathname === '/.well-known/appspecific/com.chrome.devtools.json') {
-      res.end()
-    } else if (url.pathname === '/client.js') {
+    if (url.pathname === '/client.js') {
       await sendScript(res, './client.js')
     } else if (url.searchParams.has('jsx')) {
       url.searchParams.delete('jsx') // Keep the url passed to the <Router> clean
