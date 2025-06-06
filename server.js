@@ -1,5 +1,6 @@
 import { createServer } from 'http'
 import { readFile, readdir } from 'fs/promises'
+import { renderToString } from 'react-dom/server'
 import escapeHtml from 'escape-html'
 import sanitizeFilename from 'sanitize-filename'
 
@@ -119,7 +120,7 @@ async function sendJSX(res, jsx) {
 
 async function sendHTML(res, jsx) {
   const clientJSX = await renderJSXToClientJSX(jsx)
-  let html = await renderJSXToHTML(clientJSX)
+  let html = await renderToString(clientJSX)
   const clientJSXString = JSON.stringify(clientJSX, stringifyJSX)
   html += `<script>window.__INITIAL_CLIENT_JSX_STRING__ = `
   html += JSON.stringify(clientJSXString).replace(/</g, '\\u003c')
@@ -197,51 +198,4 @@ async function renderJSXToClientJSX(jsx) {
       )
     }
   } else throw new Error('Not implemented')
-}
-
-async function renderJSXToHTML(jsx) {
-  if (typeof jsx === 'string' || typeof jsx === 'number') {
-    return escapeHtml(jsx)
-  } else if (jsx == null || typeof jsx === 'boolean') {
-    return ''
-  } else if (Array.isArray(jsx)) {
-    const childHtmls = await Promise.all(
-      jsx.map((child) => renderJSXToHTML(child))
-    )
-    let html = ''
-    let wasTextNode = false
-    let isTextNode = false
-    for (let i = 0; i < jsx.length; i++) {
-      isTextNode = typeof jsx[i] === 'string' || typeof jsx[i] === 'number'
-      if (wasTextNode && isTextNode) {
-        html += '<!-- -->'
-      }
-      html += childHtmls[i]
-      wasTextNode = isTextNode
-    }
-    return html
-  } else if (typeof jsx === 'object') {
-    if (jsx.$$typeof === Symbol.for('react.transitional.element')) {
-      if (typeof jsx.type === 'string') {
-        let html = '<' + jsx.type
-        for (const propName in jsx.props) {
-          if (jsx.props.hasOwnProperty(propName) && propName !== 'children') {
-            html += ' '
-            html += propName
-            html += '='
-            html += escapeHtml(jsx.props[propName])
-          }
-        }
-        html += '>'
-        html += await renderJSXToHTML(jsx.props.children)
-        html += '</' + jsx.type + '>'
-        return html
-      } else if (typeof jsx.type === 'function') {
-        const Component = jsx.type
-        const props = jsx.props
-        const returnedJsx = await Component(props)
-        return renderJSXToHTML(returnedJsx)
-      } else throw new Error('Not implemented.')
-    } else throw new Error('Cannot render an object.')
-  } else throw new Error('Not implemented.')
 }
