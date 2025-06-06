@@ -2,13 +2,15 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "nodemon -- --disable-warning=ExperimentalWarning --experimental-loader ./node-jsx-loader.js ./server.js"
+    "dev": "concurrently \"pnpm dev:ssr\" \"pnpm dev:rsc\"",
+    "dev:rsc": "nodemon -- --disable-warning=ExperimentalWarning --experimental-loader ./node-jsx-loader.js ./server/rsc.js",
+    "dev:ssr": "nodemon -- --disable-warning=ExperimentalWarning --experimental-loader ./node-jsx-loader.js ./server/ssr.js"
   },
   "packageManager": "pnpm@9.6.0",
   "dependencies": {
     "@babel/core": "^7.27.4",
     "@babel/plugin-transform-react-jsx": "^7.27.1",
-    "escape-html": "^1.0.3",
+    "concurrently": "^9.1.2",
     "nodemon": "^3.1.10",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
