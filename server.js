@@ -104,11 +104,23 @@ function Footer({ author }) {
   )
 }
 
-async function sendHTML(res, jsx) {
-  let html = await renderJSXToHTML(jsx)
+async function sendScript(res, filename) {
+  const content = await readFile(filename, 'utf8')
+  res.setHeader('Content-Type', 'text/javascript')
+  res.end(content)
+}
+
+async function sendJSX(res, jsx) {
   const clientJSX = await renderJSXToClientJSX(jsx)
   const clientJSXString = JSON.stringify(clientJSX, stringifyJSX)
-  console.log({ clientJSXString })
+  res.setHeader('Content-Type', 'application/json')
+  res.end(clientJSXString)
+}
+
+async function sendHTML(res, jsx) {
+  const clientJSX = await renderJSXToClientJSX(jsx)
+  let html = await renderJSXToHTML(clientJSX)
+  const clientJSXString = JSON.stringify(clientJSX, stringifyJSX)
   html += `<script>window.__INITIAL_CLIENT_JSX_STRING__ = `
   html += JSON.stringify(clientJSXString).replace(/</g, '\\u003c')
   html += `</script>`
@@ -127,6 +139,12 @@ async function sendHTML(res, jsx) {
   res.end(html)
 }
 
+function throwNotFound(cause) {
+  const notFound = new Error('Not found.', { cause })
+  notFound.statusCode = 404
+  throw notFound
+}
+
 function stringifyJSX(key, value) {
   if (value === Symbol.for('react.transitional.element')) {
     return '$RE'
@@ -137,23 +155,48 @@ function stringifyJSX(key, value) {
   }
 }
 
-async function sendJSX(res, jsx) {
-  const clientJSX = await renderJSXToClientJSX(jsx)
-  const clientJSXString = JSON.stringify(clientJSX, stringifyJSX)
-  res.setHeader('Content-Type', 'application/json')
-  res.end(clientJSXString)
-}
-
-async function sendScript(res, filename) {
-  const content = await readFile(filename, 'utf8')
-  res.setHeader('Content-Type', 'text/javascript')
-  res.end(content)
-}
-
-function throwNotFound(cause) {
-  const notFound = new Error('Not found.', { cause })
-  notFound.statusCode = 404
-  throw notFound
+async function renderJSXToClientJSX(jsx) {
+  if (
+    typeof jsx === 'string' ||
+    typeof jsx === 'number' ||
+    typeof jsx === 'boolean' ||
+    jsx == null
+  ) {
+    // Don't need to do anything special with these types.
+    return jsx
+  } else if (Array.isArray(jsx)) {
+    // Process each item in an array.
+    return Promise.all(jsx.map((child) => renderJSXToClientJSX(child)))
+  } else if (jsx != null && typeof jsx === 'object') {
+    if (jsx.$$typeof === Symbol.for('react.transitional.element')) {
+      if (typeof jsx.type === 'string') {
+        // This is a component like <div />.
+        // Go over its props to make sure they can be turned into JSON.
+        return {
+          ...jsx,
+          props: await renderJSXToClientJSX(jsx.props),
+        }
+      } else if (typeof jsx.type === 'function') {
+        // This is a custom React component (like <Footer />).
+        // Call its function, and repeat the procedure for the JSX it returns.
+        const Component = jsx.type
+        const props = jsx.props
+        const returnedJsx = await Component(props)
+        return renderJSXToClientJSX(returnedJsx)
+      } else throw new Error('Not implemented.')
+    } else {
+      // This is an arbitrary object (for example, props, or something inside of them).
+      // Go over every value inside, and process it too in case there's some JSX in it.
+      return Object.fromEntries(
+        await Promise.all(
+          Object.entries(jsx).map(async ([propName, value]) => [
+            propName,
+            await renderJSXToClientJSX(value),
+          ])
+        )
+      )
+    }
+  } else throw new Error('Not implemented')
 }
 
 async function renderJSXToHTML(jsx) {
@@ -201,48 +244,4 @@ async function renderJSXToHTML(jsx) {
       } else throw new Error('Not implemented.')
     } else throw new Error('Cannot render an object.')
   } else throw new Error('Not implemented.')
-}
-
-async function renderJSXToClientJSX(jsx) {
-  if (
-    typeof jsx === 'string' ||
-    typeof jsx === 'number' ||
-    typeof jsx === 'boolean' ||
-    jsx == null
-  ) {
-    // Don't need to do anything special with these types.
-    return jsx
-  } else if (Array.isArray(jsx)) {
-    // Process each item in an array.
-    return Promise.all(jsx.map((child) => renderJSXToClientJSX(child)))
-  } else if (jsx != null && typeof jsx === 'object') {
-    if (jsx.$$typeof === Symbol.for('react.transitional.element')) {
-      if (typeof jsx.type === 'string') {
-        // This is a component like <div />.
-        // Go over its props to make sure they can be turned into JSON.
-        return {
-          ...jsx,
-          props: await renderJSXToClientJSX(jsx.props),
-        }
-      } else if (typeof jsx.type === 'function') {
-        // This is a custom React component (like <Footer />).
-        // Call its function, and repeat the procedure for the JSX it returns.
-        const Component = jsx.type
-        const props = jsx.props
-        const returnedJsx = await Component(props)
-        return renderJSXToClientJSX(returnedJsx)
-      } else throw new Error('Not implemented.')
-    } else {
-      // This is an arbitrary object (for example, props, or something inside of them).
-      // Go over every value inside, and process it too in case there's some JSX in it.
-      return Object.fromEntries(
-        await Promise.all(
-          Object.entries(jsx).map(async ([propName, value]) => [
-            propName,
-            await renderJSXToClientJSX(value),
-          ])
-        )
-      )
-    }
-  } else throw new Error('Not implemented')
 }

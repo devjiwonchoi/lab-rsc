@@ -13,5 +13,8 @@
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "sanitize-filename": "^1.6.3"
+  },
+  "devDependencies": {
+    "@types/node": "^20.17.58"
   }
 }
