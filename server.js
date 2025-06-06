@@ -78,7 +78,6 @@ function BlogLayout({ children }) {
     <html>
       <head>
         <title>My blog</title>
-        <script src="/client.js"></script>
       </head>
       <body>
         <nav>
@@ -108,7 +107,18 @@ function Footer({ author }) {
 }
 
 async function sendHTML(res, jsx) {
-  const html = await renderJSXToHTML(jsx)
+  let html = await renderJSXToHTML(jsx)
+  html += `
+    <script type="importmap">
+      {
+        "imports": {
+          "react": "https://esm.sh/react@19.1.0",
+          "react-dom/client": "https://esm.sh/react-dom@19.1.0/client"
+        }
+      }
+    </script>
+    <script type="module" src="/client.js"></script>
+  `
   res.setHeader('Content-Type', 'text/html')
   res.end(html)
 }
