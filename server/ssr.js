@@ -6,6 +6,13 @@ import sanitizeFilename from 'sanitize-filename'
 createServer(async (req, res) => {
   try {
     const url = new URL(req.url, `http://${req.headers.host}`)
+
+    if (url.pathname === '/favicon.ico') {
+      res.setHeader('Content-Type', 'image/x-icon')
+      res.end(await readFile('./app/favicon.ico'))
+      return
+    }
+
     if (url.pathname === '/client.js') {
       await sendScript(res, './client.js')
     } else {
