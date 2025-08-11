@@ -8,8 +8,6 @@
   },
   "packageManager": "pnpm@9.6.0",
   "dependencies": {
-    "@babel/core": "^7.27.4",
-    "@babel/plugin-transform-react-jsx": "^7.27.1",
     "concurrently": "^9.1.2",
     "nodemon": "^3.1.10",
     "react": "^19.1.0",
@@ -17,6 +15,7 @@
     "sanitize-filename": "^1.6.3"
   },
   "devDependencies": {
-    "@types/node": "^20.17.58"
+    "@types/node": "^20.17.58",
+    "esbuild": "^0.25.8"
   }
 }
