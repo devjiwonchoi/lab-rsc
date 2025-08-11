@@ -5,6 +5,18 @@ import { Router } from '../router.js'
 
 createServer(async (req, res) => {
   try {
+    // Add CORS headers
+    res.setHeader('Access-Control-Allow-Origin', 'http://localhost:3000')
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type')
+
+    // Handle preflight OPTIONS request
+    if (req.method === 'OPTIONS') {
+      res.statusCode = 200
+      res.end()
+      return
+    }
+
     const url = new URL(req.url, `http://${req.headers.host}`)
     if (url.searchParams.has('jsx')) {
       // Keep the url passed to the <Router> clean

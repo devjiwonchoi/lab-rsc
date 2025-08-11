@@ -30,7 +30,7 @@ function parseJSX(key, value) {
 }
 
 async function fetchClientJSX(pathname) {
-  const response = await fetch(pathname + '?jsx')
+  const response = await fetch('http://localhost:3001' + pathname + '?jsx')
   const clientJSXString = await response.text()
   const clientJSX = JSON.parse(clientJSXString, parseJSX)
   return clientJSX
