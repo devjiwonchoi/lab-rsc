@@ -1,6 +1,7 @@
 import { createServer } from 'http'
 import { readFile, readdir } from 'fs/promises'
 import sanitizeFilename from 'sanitize-filename'
+import { Router } from '../router.js'
 
 createServer(async (req, res) => {
   try {
@@ -17,17 +18,6 @@ createServer(async (req, res) => {
     res.end()
   }
 }).listen(3001)
-
-function Router({ url }) {
-  let page
-  if (url.pathname === '/') {
-    page = <BlogIndexPage />
-  } else {
-    const postSlug = sanitizeFilename(url.pathname.slice(1))
-    page = <BlogPostPage postSlug={postSlug} />
-  }
-  return <BlogLayout>{page}</BlogLayout>
-}
 
 async function sendJSX(res, jsx) {
   const clientJSX = await renderJSXToClientJSX(jsx)
@@ -88,82 +78,4 @@ async function renderJSXToClientJSX(jsx) {
       )
     }
   } else throw new Error('Not implemented')
-}
-
-async function BlogIndexPage() {
-  const postFiles = await readdir('./posts')
-  const postSlugs = postFiles.map((file) =>
-    file.slice(0, file.lastIndexOf('.'))
-  )
-  return (
-    <section>
-      <h1>Welcome to my blog</h1>
-      <div>
-        {postSlugs.map((slug) => (
-          <Post key={slug} slug={slug} />
-        ))}
-      </div>
-    </section>
-  )
-}
-
-function BlogPostPage({ postSlug }) {
-  return <Post slug={postSlug} />
-}
-
-function throwNotFound(cause) {
-  const notFound = new Error('Not found.', { cause })
-  notFound.statusCode = 404
-  throw notFound
-}
-
-async function Post({ slug }) {
-  let content
-  try {
-    content = await readFile('./posts/' + slug + '.txt', 'utf8')
-  } catch (err) {
-    throwNotFound(err)
-  }
-  return (
-    <section>
-      <h2>
-        <a href={'/' + slug}>{slug}</a>
-      </h2>
-      <article>{content}</article>
-    </section>
-  )
-}
-
-function BlogLayout({ children }) {
-  const author = 'Jiwon Choi'
-  return (
-    <html>
-      <head>
-        <title>My blog</title>
-      </head>
-      <body>
-        <nav>
-          <a href="/">Home</a>
-          <hr />
-          <input />
-          <hr />
-        </nav>
-        <main>{children}</main>
-        <Footer author={author} />
-      </body>
-    </html>
-  )
-}
-
-function Footer({ author }) {
-  return (
-    <footer>
-      <hr />
-      <p>
-        <i>
-          (c) {author} {new Date().getFullYear()}
-        </i>
-      </p>
-    </footer>
-  )
 }
