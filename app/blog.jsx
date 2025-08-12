@@ -8,7 +8,8 @@ async function Post({ slug }) {
   } catch (err) {
     const notFound = new Error('Not found.', { cause: err })
     notFound.statusCode = 404
-    throw notFound
+    // TODO: render 404 page
+    // throw notFound
   }
   return (
     <section>
@@ -33,6 +34,7 @@ export default async function Blog() {
           <Post key={slug} slug={slug} />
         ))}
       </div>
+      <>Fragment</>
     </section>
   )
 }

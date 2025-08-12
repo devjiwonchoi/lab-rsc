@@ -11,7 +11,8 @@ export default async function BlogPostPage({ postSlug }) {
   try {
     content = await readFile('./app/posts/' + postSlug + '.txt', 'utf8')
   } catch (err) {
-    throwNotFound(err)
+    // TODO: render 404 page
+    // throwNotFound(err)
   }
   return (
     <section>
