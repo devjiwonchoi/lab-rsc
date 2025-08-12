@@ -2,9 +2,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "concurrently \"pnpm dev:ssr\" \"pnpm dev:rsc\"",
-    "dev:rsc": "nodemon -- --disable-warning=ExperimentalWarning --experimental-loader ./node-jsx-loader.js ./server/rsc.js",
-    "dev:ssr": "nodemon -- --disable-warning=ExperimentalWarning --experimental-loader ./node-jsx-loader.js ./server/ssr.js"
+    "dev": "nodemon -- --disable-warning=ExperimentalWarning --experimental-loader ./node-jsx-loader.js ./lib/server.js"
   },
   "packageManager": "pnpm@9.6.0",
   "dependencies": {
